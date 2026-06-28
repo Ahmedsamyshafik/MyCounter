@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ar">
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  />
+  <head>
+    <meta charset="UTF-8" />
+    <title>Army Countdown</title>
+    <style>
+      body {
+        font-family: "Cairo", sans-serif;
+
+        direction: rtl;
+        text-align: center;
+        background: #0f0f0f;
+        color: #f1f1f1;
+        margin: 0;
+        padding: 20px;
+      }
+
+      .grid {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 4px;
+        max-width: 900px;
+        margin: auto;
+      }
+
+      h1 {
+        font-weight: 700;
+        font-size: 28px;
+        margin-bottom: 20px;
+      }
+
+      .stats {
+        font-size: 18px;
+        line-height: 1.8;
+      }
+
+      #liveCounter {
+        font-size: 22px;
+        font-weight: 600;
+        color: #00d4ff;
+      }
+
+      #progressText {
+        margin-top: 10px;
+        font-weight: 600;
+        color: #ccc;
+      }
+
+      /* الأيام */
+      .day {
+        width: 18px;
+        height: 18px;
+        margin: 2px;
+        border-radius: 4px;
+        position: relative;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+
+      .day:hover {
+        transform: scale(1.4);
+      }
+
+      /* تحسين التمييز */
+      .army {
+        background: #e74c3c;
+      }
+
+      .leave {
+        background: #2ecc71;
+      }
+
+      .today {
+        border: 2px solid #f1c40f;
+      }
+
+      /* tooltip أوضح */
+      .tooltip {
+        position: absolute;
+        bottom: 25px;
+        background: rgba(0, 0, 0, 0.9);
+        padding: 5px 8px;
+        border-radius: 6px;
+        font-size: 12px;
+        display: none;
+        white-space: nowrap;
+        color: #fff;
+      }
+
+      .day:hover .tooltip {
+        display: block;
+      }
+
+      /* progress bar */
+      #progressBar {
+        transition: width 0.4s ease;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>📅 العد التنازلي للجيش</h1>
+
+    <div class="stats">
+      <p>⏳ الوقت المتبقي:</p>
+      <p id="liveCounter"></p>
+
+      <p>📊 نسبة ما تم إنجازه:</p>
+      <div
+        style="
+          width: 80%;
+          margin: auto;
+          background: #333;
+          height: 25px;
+          border-radius: 10px;
+        "
+      >
+        <div
+          id="progressBar"
+          style="
+            height: 100%;
+            width: 0%;
+            background: #3498db;
+            border-radius: 10px;
+          "
+        ></div>
+      </div>
+
+      <p id="progressText"></p>
+
+      <p>📆 الإجازات المتبقية: <span id="leavesLeft"></span></p>
+    </div>
+    <div class="grid" id="grid"></div>
+    <div class="pt-3">
+      <div class="Aga">الإجازات: <span id="agazatCount"></span></div>
+      <div class="Gesh">الجيش: <span id="geshCount"></span></div>
+    </div>
+
+    <script>
+      const startServiceDate = new Date("2024-11-09");
+      const endDate = new Date("2026-10-01T00:00:00");
+      const armyStartDate = new Date("2026-06-26"); // اول يوم من ال 12 يوم اللي هقعدهم
+      const startDate = new Date(); // من النهارده
+
+      const cycle = 18;
+
+      let grid = document.getElementById("grid");
+
+      /* =========================
+   LIVE TIMER
+========================= */
+      function updateLiveCounter() {
+        let now = new Date();
+        let diff = endDate - now;
+
+        if (diff <= 0) {
+          document.getElementById("liveCounter").innerText = "خلصت 🎉";
+          return;
+        }
+
+        let days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        let hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        let minutes = Math.floor((diff / (1000 * 60)) % 60);
+        let seconds = Math.floor((diff / 1000) % 60);
+
+        document.getElementById("liveCounter").innerText =
+          `${days} يوم ${hours} ساعة ${minutes} دقيقة ${seconds} ثانية`;
+      }
+
+      setInterval(updateLiveCounter, 1000);
+      updateLiveCounter();
+
+      /* =========================
+   PROGRESS BAR
+========================= */
+      function updateProgress() {
+        let now = new Date();
+
+        let total = endDate - startServiceDate;
+        let passed = now - startServiceDate;
+
+        let percent = (passed / total) * 100;
+
+        if (percent > 100) percent = 100;
+        if (percent < 0) percent = 0;
+
+        document.getElementById("progressBar").style.width =
+          percent.toFixed(2) + "%";
+
+        document.getElementById("progressText").innerText =
+          `تم إنجاز ${percent.toFixed(2)}% من المدة`;
+      }
+
+      updateProgress();
+      setInterval(updateProgress, 60000); // تحديث كل دقيقة
+
+      /* =========================
+   GRID + DAYS
+========================= */
+      let totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
+      let leaves = Math.floor(totalDays / cycle);
+      let agazat = 0;
+      let gesh = 0;
+      document.getElementById("leavesLeft").innerText = leaves;
+
+      for (let i = 0; i < totalDays; i++) {
+        let dayDiv = document.createElement("div");
+        dayDiv.classList.add("day");
+
+        let currentDate = new Date();
+        currentDate.setDate(startDate.getDate() + i);
+
+        // قبل 2/5 إجازة
+        if (currentDate < armyStartDate) {
+          dayDiv.classList.add("leave");
+        } else {
+          let diffDays = Math.floor(
+            (currentDate - armyStartDate) / (1000 * 60 * 60 * 24),
+          );
+          let dayInCycle = diffDays % cycle;
+
+          if (dayInCycle < 12) {
+            dayDiv.classList.add("army");
+            gesh++;
+          } else {
+            dayDiv.classList.add("leave");
+            agazat++;
+          }
+        }
+
+        if (i === 0) {
+          dayDiv.classList.add("today");
+        }
+
+        let tooltip = document.createElement("div");
+        tooltip.classList.add("tooltip");
+
+        tooltip.innerText = currentDate.toLocaleDateString("ar-EG", {
+          weekday: "long",
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+
+        dayDiv.appendChild(tooltip);
+        grid.appendChild(dayDiv);
+      }
+
+      document.getElementById("agazatCount").innerText = agazat;
+      document.getElementById("geshCount").innerText = gesh;
+    </script>
+  </body>
+</html>
